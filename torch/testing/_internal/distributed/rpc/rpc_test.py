@@ -89,6 +89,9 @@ class StubRpcAgent:
     def __init__(self, world_size):
         self.world_size = world_size
 
+    def shutdown(self):
+        pass
+
     def get_worker_infos(self):
         return {
             rpc.WorkerInfo(name=worker_name(rank), id=rank)
@@ -695,6 +698,10 @@ class RpcTest(RpcAgentTestFixture):
             world_size=self.world_size,
             rpc_backend_options=self.rpc_backend_options,
         )
+
+        # Non-graceful, as otherwise the stub agent would have to support
+        # sending messages in order for _wait_all_workers to work.
+        rpc.shutdown(graceful=False)
 
     @requires_process_group_agent("PROCESS_GROUP rpc backend specific test, skip")
     @dist_init(setup_rpc=False)
@@ -3345,6 +3352,8 @@ class RpcTest(RpcAgentTestFixture):
         # Test PG
         dist.barrier()
 
+        rpc.shutdown()
+
     @dist_init(setup_rpc=False)
     def test_init_rpc_then_pg(self):
         rpc.init_rpc(
@@ -3369,6 +3378,8 @@ class RpcTest(RpcAgentTestFixture):
 
         # Test PG
         dist.barrier()
+
+        rpc.shutdown()
 
     @dist_init
     def test_wait_all_with_exception(self):
